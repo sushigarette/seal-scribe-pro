@@ -1,110 +1,177 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CertificateListItem, Certificate } from "@/components/CertificateListItem";
 import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus } from "lucide-react";
+import { Shield, Plus, RefreshCw, Download, FileText, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Mock data - in real app, this would come from API
-const mockCertificates: Certificate[] = [
-  {
-    id: "1",
-    name: "Certificat SSL exemple.com",
-    issuer: "Let's Encrypt",
-    expirationDate: "15/03/2025",
-    status: "valid",
-    type: "SSL/TLS",
-    fileSize: "2.1 KB"
-  },
-  {
-    id: "2", 
-    name: "Certificat Code Signing",
-    issuer: "DigiCert",
-    expirationDate: "28/02/2025",
-    status: "expiring",
-    type: "Code Signing",
-    fileSize: "4.8 KB"
-  },
-  {
-    id: "3",
-    name: "Certificat Email Sécurisé",
-    issuer: "Comodo",
-    expirationDate: "10/01/2025",
-    status: "expired",
-    type: "Email",
-    fileSize: "1.9 KB"
-  },
-  {
-    id: "4",
-    name: "Certificat Client VPN",
-    issuer: "GlobalSign",
-    expirationDate: "20/06/2025",
-    status: "valid",
-    type: "Client",
-    fileSize: "3.2 KB"
-  },
-  {
-    id: "5",
-    name: "Certificat Wildcard *.monsite.fr",
-    issuer: "Sectigo",
-    expirationDate: "05/04/2025",
-    status: "valid",
-    type: "SSL/TLS",
-    fileSize: "2.7 KB"
-  },
-  {
-    id: "6",
-    name: "Certificat API Interne",
-    issuer: "Autorité Interne",
-    expirationDate: "12/02/2025",
-    status: "expiring",
-    type: "SSL/TLS",
-    fileSize: "1.8 KB"
-  }
-];
+import { useCertificates } from "@/hooks/useCertificates";
+import { apiService } from "@/services/api";
 
 const Index = () => {
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("not_after");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [page, setPage] = useState(1);
+  
   const { toast } = useToast();
 
-  const filteredCertificates = mockCertificates.filter(cert => {
-    const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.issuer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || cert.status === statusFilter;
-    const matchesType = typeFilter === "all" || cert.type.toLowerCase().includes(typeFilter.toLowerCase());
-    
-    return matchesSearch && matchesStatus && matchesType;
+  const {
+    certificates,
+    pagination,
+    stats,
+    loading,
+    error,
+    refetch,
+    setPage: setPageHook,
+    setSearch,
+    setStatusFilter: setStatusFilterHook,
+    setIssuerFilter,
+    setSorting,
+    downloadCertificate,
+    rescanCertificates,
+    exportCsv,
+    exportJson,
+  } = useCertificates({
+    page,
+    search: searchTerm,
+    statusFilter: statusFilter === "all" ? undefined : statusFilter,
+    sortBy,
+    sortOrder,
   });
 
-  const handleDownload = (id: string) => {
-    const cert = mockCertificates.find(c => c.id === id);
-    toast({
-      title: "Téléchargement initié",
-      description: `Le certificat "${cert?.name}" est en cours de téléchargement.`,
-    });
+  // Synchroniser les changements de page
+  useEffect(() => {
+    setPageHook(page);
+  }, [page, setPageHook]);
+
+  // Synchroniser les changements de recherche
+  useEffect(() => {
+    setSearch(searchTerm);
+  }, [searchTerm, setSearch]);
+
+  // Synchroniser les changements de filtre de statut
+  useEffect(() => {
+    setStatusFilterHook(statusFilter === "all" ? undefined : statusFilter);
+  }, [statusFilter, setStatusFilterHook]);
+
+  // Synchroniser les changements de tri
+  useEffect(() => {
+    setSorting(sortBy, sortOrder);
+  }, [sortBy, sortOrder, setSorting]);
+
+  const handleDownload = async (archiveName: string) => {
+    try {
+      await downloadCertificate(archiveName);
+      toast({
+        title: "Téléchargement initié",
+        description: `L'archive "${archiveName}.tar.gz" est en cours de téléchargement.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de téléchargement",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleView = (id: string) => {
-    const cert = mockCertificates.find(c => c.id === id);
-    setSelectedCertificate(cert || null);
-    setIsDetailOpen(true);
+  const handleView = async (archiveName: string) => {
+    try {
+      const details = await apiService.getCertificateDetails(archiveName);
+      if (details.certificates.length > 0) {
+        setSelectedCertificate(details.certificates[0]);
+        setIsDetailOpen(true);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les détails du certificat",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRescan = async () => {
+    try {
+      await rescanCertificates();
+      toast({
+        title: "Rescan effectué",
+        description: "Les certificats ont été mis à jour.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de rescan",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      await exportCsv(statusFilter === "all" ? undefined : statusFilter);
+      toast({
+        title: "Export CSV",
+        description: "Le fichier CSV a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportJson = async () => {
+    try {
+      await exportJson(statusFilter === "all" ? undefined : statusFilter);
+      toast({
+        title: "Export JSON",
+        description: "Le fichier JSON a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   const getStatusCounts = () => {
+    if (!stats) return { total: 0, valid: 0, expiring: 0, expired: 0 };
     return {
-      total: mockCertificates.length,
-      valid: mockCertificates.filter(c => c.status === "valid").length,
-      expiring: mockCertificates.filter(c => c.status === "expiring").length,
-      expired: mockCertificates.filter(c => c.status === "expired").length,
+      total: stats.total,
+      valid: stats.valid,
+      expiring: stats.expiring_soon,
+      expired: stats.expired,
     };
   };
 
   const statusCounts = getStatusCounts();
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Erreur de chargement</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={refetch}>Réessayer</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -123,10 +190,33 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button className="bg-gradient-primary hover:opacity-90 shadow-card">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau certificat
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRescan}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Rescan
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportCsv}
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportJson}
+                className="flex items-center gap-2"
+              >
+                <Database className="h-4 w-4" />
+                JSON
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -162,17 +252,30 @@ const Index = () => {
 
         {/* Certificates List */}
         <div className="mt-8">
-          {filteredCertificates.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <RefreshCw className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Chargement...</h3>
+              <p className="text-muted-foreground">
+                Chargement des certificats en cours.
+              </p>
+            </div>
+          ) : certificates.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Aucun certificat trouvé</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {statusCounts.total === 0 ? "Aucun certificat" : "Aucun certificat trouvé"}
+              </h3>
               <p className="text-muted-foreground">
-                Aucun certificat ne correspond à vos critères de recherche.
+                {statusCounts.total === 0 
+                  ? "Aucun certificat n'a été détecté dans le répertoire de surveillance."
+                  : "Aucun certificat ne correspond à vos critères de recherche."
+                }
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredCertificates.map((certificate) => (
+              {certificates.map((certificate) => (
                 <CertificateListItem
                   key={certificate.id}
                   certificate={certificate}
@@ -183,6 +286,31 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+              >
+                Précédent
+              </Button>
+              <span className="flex items-center px-4 text-sm text-muted-foreground">
+                Page {page} sur {pagination.pages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= pagination.pages}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Certificate Detail Modal */}
         <CertificateDetail

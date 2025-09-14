@@ -8,14 +8,14 @@ interface CertificateDetailProps {
   certificate: Certificate | null;
   isOpen: boolean;
   onClose: () => void;
-  onDownload: (id: string) => void;
+  onDownload: (archiveName: string) => void;
 }
 
 const getStatusColor = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "bg-success text-success-foreground";
-    case "expiring":
+    case "expiring_soon":
       return "bg-warning text-warning-foreground";
     case "expired":
       return "bg-destructive text-destructive-foreground";
@@ -28,7 +28,7 @@ const getStatusText = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "Valide";
-    case "expiring":
+    case "expiring_soon":
       return "Expire bientôt";
     case "expired":
       return "Expiré";
@@ -42,15 +42,15 @@ export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: 
 
   // Mock detailed data - in real app, this would come from API
   const detailData = {
-    serialNumber: "3A:4B:5C:6D:7E:8F:9A:0B:1C:2D",
-    algorithm: "SHA256 avec RSA",
-    keyLength: "2048 bits",
-    fingerprint: "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90",
-    subject: "CN=exemple.com, O=Mon Entreprise, C=FR",
-    issueDate: "15/01/2024",
-    validFrom: "15/01/2024",
+    serialNumber: "N/A",
+    algorithm: "N/A",
+    keyLength: "N/A",
+    fingerprint: "N/A",
+    subject: "N/A",
+    issueDate: "N/A",
+    validFrom: "N/A",
     validTo: certificate.expirationDate,
-    domains: ["exemple.com", "www.exemple.com", "api.exemple.com"],
+    domains: [],
   };
 
   return (

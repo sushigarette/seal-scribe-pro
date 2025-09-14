@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  certificate-manager:
+    build: .
+    container_name: certificate-manager
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/certs:/data/certs:ro  # Montage en lecture seule du répertoire des certificats
+      - certificate-data:/app/data    # Volume pour la base de données SQLite
+    environment:
+      - CERTS_DIR=/data/certs
+      - PORT=8080
+      - HOST=0.0.0.0
+      - SCAN_INTERVAL_SEC=300
+      - THRESHOLD_DAYS=30
+      # Configuration d'authentification (optionnelle)
+      # - AUTH_TOKEN=your-secret-token-here
+      # - BASIC_USER=admin
+      # - BASIC_PASS=your-password-here
+      - SECRET_KEY=change-this-in-production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cert-network
+
+volumes:
+  certificate-data:
+
+networks:
+  cert-network:
+    driver: bridge
