@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CertificateCard, Certificate } from "@/components/CertificateCard";
+import { CertificateListItem, Certificate } from "@/components/CertificateListItem";
 import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
@@ -160,7 +160,7 @@ const Index = () => {
           onTypeFilterChange={setTypeFilter}
         />
 
-        {/* Certificates Grid */}
+        {/* Certificates List */}
         <div className="mt-8">
           {filteredCertificates.length === 0 ? (
             <div className="text-center py-12">
@@ -171,9 +171,9 @@ const Index = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-3">
               {filteredCertificates.map((certificate) => (
-                <CertificateCard
+                <CertificateListItem
                   key={certificate.id}
                   certificate={certificate}
                   onDownload={handleDownload}
