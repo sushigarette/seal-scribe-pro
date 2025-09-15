@@ -1,81 +1,73 @@
-# Seal Scribe Pro
+# Welcome to your Lovable project
 
-Application de gestion de certificats professionnels construite avec React, TypeScript et Tailwind CSS.
+## Project info
 
-## Technologies utilisées
+**URL**: https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41
 
-- **Vite** - Outil de build rapide et moderne
-- **TypeScript** - Langage de programmation typé
-- **React** - Bibliothèque UI
-- **shadcn/ui** - Composants UI modernes
-- **Tailwind CSS** - Framework CSS utilitaire
-- **React Router** - Routage côté client
+## How can I edit this code?
 
-## Installation et développement
+There are several ways of editing your application.
 
-### Prérequis
+**Use Lovable**
 
-- Node.js (version 18 ou supérieure)
-- npm ou yarn
+Simply visit the [Lovable Project](https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41) and start prompting.
 
-### Installation
+Changes made via Lovable will be committed automatically to this repo.
 
-```bash
-# Cloner le repository
-git clone <URL_DU_REPOSITORY>
+**Use your preferred IDE**
 
-# Naviguer vers le dossier du projet
-cd seal-scribe-pro
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-# Installer les dépendances
-npm install
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-# Démarrer le serveur de développement
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-### Scripts disponibles
+**Edit a file directly in GitHub**
 
-- `npm run dev` - Démarre le serveur de développement
-- `npm run build` - Construit l'application pour la production
-- `npm run build:dev` - Construit l'application en mode développement
-- `npm run preview` - Prévisualise la build de production
-- `npm run lint` - Exécute le linter ESLint
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## Structure du projet
+**Use GitHub Codespaces**
 
-```
-src/
-├── components/          # Composants réutilisables
-│   ├── ui/             # Composants UI de base (shadcn/ui)
-│   ├── CertificateDetail.tsx
-│   ├── CertificateFilters.tsx
-│   └── CertificateListItem.tsx
-├── hooks/              # Hooks personnalisés
-├── lib/                # Utilitaires et configurations
-├── pages/              # Pages de l'application
-└── main.tsx           # Point d'entrée de l'application
-```
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## Déploiement
+## What technologies are used for this project?
 
-Pour déployer l'application :
+This project is built with:
 
-```bash
-# Construire l'application
-npm run build
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-# Les fichiers de production seront dans le dossier 'dist'
-```
+## How can I deploy this project?
 
-## Contribution
+Simply open [Lovable](https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41) and click on Share -> Publish.
 
-1. Fork le projet
-2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Commiter vos changements (`git commit -m 'Ajouter nouvelle fonctionnalité'`)
-4. Pousser vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
-5. Ouvrir une Pull Request
+## Can I connect a custom domain to my Lovable project?
 
-## Licence
+Yes, you can!
 
-Ce projet est sous licence MIT.
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
