@@ -62,9 +62,6 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Gestion des Certificats</h1>
-                <p className="text-muted-foreground">
-                  Gérez et surveillez vos certificats numériques
-                </p>
               </div>
             </div>
             <div className="flex gap-2">

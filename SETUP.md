@@ -1,112 +1,280 @@
-# Configuration de Seal Scribe Pro
+# Configuration de MHCerts
 
-## Prérequis
+## Installation locale
 
-- Node.js 18+ 
+### Prérequis
+- Node.js 18+
 - npm ou yarn
-- Vos certificats client (.crt et .key)
 
-## Installation
-
-1. **Installer les dépendances :**
-   ```bash
-   npm install
-   ```
-
-2. **Configurer les certificats :**
-   - Créez le dossier `certs/` s'il n'existe pas
-   - Placez vos fichiers de certificat dans le dossier `certs/` :
-     - `client.crt` - Votre certificat client
-     - `client.key` - Votre clé privée
-     - `ca.crt` - (Optionnel) Certificat d'autorité de certification
-
-3. **Démarrer l'application :**
-
-   **Option 1 - Démarrage complet (recommandé) :**
-   ```bash
-   npm run start:all
-   ```
-   Cette commande démarre à la fois le serveur proxy et l'application frontend.
-
-   **Option 2 - Démarrage séparé :**
-   ```bash
-   # Terminal 1 - Serveur proxy
-   npm run server:start
-   
-   # Terminal 2 - Application frontend
-   npm run dev
-   ```
-
-## Configuration du serveur proxy
-
-Le serveur proxy (`server.js`) gère l'authentification par certificat client avec l'API des certificats. Il écoute sur le port 3001 par défaut.
-
-### Variables d'environnement
-
-Vous pouvez configurer le serveur avec les variables d'environnement suivantes :
-
+### Installation
 ```bash
-PORT=3001  # Port du serveur proxy (défaut: 3001)
+# Cloner le projet
+git clone https://github.com/sushigarette/seal-scribe-pro.git
+cd seal-scribe-pro
+
+# Renommer le dossier (optionnel)
+mv seal-scribe-pro mhcerts
+cd mhcerts
+
+# Installer les dépendances
+npm install
+
+# Placer les certificats client
+mkdir certs
+# Copier client.crt et client.key dans le dossier certs/
+
+# Démarrer le serveur proxy
+npm run server:start
+
+# Dans un autre terminal, démarrer le frontend
+npm run dev
 ```
 
-### Configuration des certificats
+## Déploiement sur Raspberry Pi
 
-Le serveur utilise les certificats situés dans le dossier `certs/` :
-- `client.crt` - Certificat client (requis)
-- `client.key` - Clé privée (requis)
-- `ca.crt` - Certificat CA (optionnel)
+### Prérequis
+- Raspberry Pi 4B avec Raspberry Pi OS
+- Node.js 18+
+- Nginx
 
-## Utilisation
+### Installation
+```bash
+# Mettre à jour le système
+sudo apt update && sudo apt upgrade -y
 
-1. **Accéder à l'application :**
-   - Frontend : http://localhost:5173
-   - API Proxy : http://localhost:3001/api/certificates
+# Installer Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-2. **Fonctionnalités :**
-   - Visualisation des certificats depuis l'API JSON
-   - Filtrage par statut (valide, expire bientôt, expiré)
-   - Filtrage par type de certificat
-   - Recherche par nom, émetteur ou numéro de série
-   - Actualisation automatique toutes les 5 minutes
-   - Détails complets de chaque certificat
+# Installer Nginx
+sudo apt install nginx -y
+
+# Cloner le projet
+git clone https://github.com/sushigarette/seal-scribe-pro.git
+cd seal-scribe-pro
+
+# Renommer le dossier
+mv seal-scribe-pro mhcerts
+cd mhcerts
+
+# Installer les dépendances
+npm install
+
+# Placer les certificats client
+mkdir certs
+# Copier client.crt et client.key dans le dossier certs/
+
+# Construire l'application
+npm run build
+
+# Configurer Nginx
+sudo nano /etc/nginx/sites-available/mhcerts
+```
+
+### Configuration Nginx
+```nginx
+server {
+    listen 80;
+    server_name _;
+    root /var/www/mhcerts;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Activation du site
+```bash
+# Activer le site
+sudo ln -s /etc/nginx/sites-available/mhcerts /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+
+# Copier les fichiers
+sudo mkdir -p /var/www/mhcerts
+sudo cp -r dist/* /var/www/mhcerts/
+sudo cp server.js package.json /var/www/mhcerts/
+sudo cp -r node_modules /var/www/mhcerts/
+sudo cp -r certs /var/www/mhcerts/
+
+# Donner les permissions
+sudo chown -R www-data:www-data /var/www/mhcerts/
+sudo chmod -R 755 /var/www/mhcerts/
+
+# Redémarrer Nginx
+sudo systemctl restart nginx
+```
+
+### Service automatique
+```bash
+# Créer le service systemd
+sudo nano /etc/systemd/system/mhcerts.service
+```
+
+```ini
+[Unit]
+Description=MHCerts Certificate Manager
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/mhcerts
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+# Activer et démarrer le service
+sudo systemctl daemon-reload
+sudo systemctl enable mhcerts
+sudo systemctl start mhcerts
+```
+
+## Mise à jour du projet
+
+### Création du script automatique
+```bash
+# Sur le Pi
+cd /home/mhcerts/mhcerts
+
+# Créer le script de mise à jour
+nano update-mhcerts.sh
+```
+
+**Contenu du script `update-mhcerts.sh` :**
+```bash
+#!/bin/bash
+
+echo "🔄 Mise à jour de MHCerts..."
+
+# Aller dans le dossier du projet
+cd /home/mhcerts/mhcerts
+
+# Configurer Git pour éviter l'erreur d'ownership (une seule fois)
+if ! git config --global --get safe.directory | grep -q "/home/mhcerts/mhcerts"; then
+    echo "🔧 Configuration Git..."
+    git config --global --add safe.directory /home/mhcerts/mhcerts
+fi
+
+# Nettoyer le workspace
+echo "🧹 Nettoyage du workspace..."
+git clean -fd
+git restore .
+
+# Récupérer les dernières modifications
+echo "📥 Récupération des modifications..."
+git pull origin main
+
+# Installer les dépendances
+echo " Installation des dépendances..."
+npm install
+
+# Construire l'application
+echo "🔨 Construction de l'application..."
+npm run build
+
+# Copier les fichiers vers le dossier web
+echo " Copie des fichiers..."
+sudo cp -r dist/* /var/www/mhcerts/
+
+# Redémarrer le service
+echo "🔄 Redémarrage du service..."
+sudo systemctl restart mhcerts
+
+echo "✅ Mise à jour terminée !"
+echo " Application disponible sur : http://192.168.1.105/"
+```
+
+```bash
+# Rendre le script exécutable
+chmod +x update-mhcerts.sh
+```
+
+### Méthode 1 : Script automatique (recommandé)
+```bash
+# Sur le Pi
+cd /home/mhcerts/mhcerts
+./update-mhcerts.sh
+```
+
+### Méthode 2 : Commandes manuelles
+```bash
+# Sur le Pi
+cd /home/mhcerts/mhcerts
+
+# Configurer Git (une seule fois)
+git config --global --add safe.directory /home/mhcerts/mhcerts
+
+# Nettoyer le workspace
+git clean -fd
+git restore .
+
+# Récupérer les modifications
+git pull origin main
+
+# Installer les dépendances
+npm install
+
+# Construire l'application
+npm run build
+
+# Copier les fichiers
+sudo cp -r dist/* /var/www/mhcerts/
+
+# Redémarrer le service
+sudo systemctl restart mhcerts
+```
+
+### Méthode 3 : Depuis votre Mac
+```bash
+# Sur votre Mac
+git add .
+git commit -m "Description des modifications"
+git push origin main
+
+# Puis sur le Pi
+cd /home/mhcerts/mhcerts
+./update-mhcerts.sh
+```
 
 ## Dépannage
 
-### Erreur de certificat
-Si vous obtenez une erreur de certificat, vérifiez :
-- Que vos fichiers `client.crt` et `client.key` sont dans le dossier `certs/`
-- Que les permissions des fichiers sont correctes
-- Que les certificats ne sont pas expirés
-
-### Erreur de connexion
-Si l'API ne répond pas :
-- Vérifiez que l'URL `https://office.mhcomm.fr/crtinfo/certindex.json` est accessible
-- Vérifiez que vos certificats sont valides pour cette API
-- Consultez les logs du serveur proxy
-
-### Port déjà utilisé
-Si le port 3001 est déjà utilisé :
+### Vérifier le statut du service
 ```bash
-PORT=3002 npm run server:start
+sudo systemctl status mhcerts
 ```
 
-## Structure des données
-
-L'application s'attend à recevoir un JSON avec la structure suivante :
-```json
-[
-  {
-    "dn": "/C=FR/ST=Alsace/L=Strasbourg/O=MHComm/OU=AURAL/CN=logsvc_aural",
-    "serno": "2CBD",
-    "not_aft": "2027-03-10T14:29:00"
-  }
-]
+### Voir les logs
+```bash
+sudo journalctl -u mhcerts -f
 ```
 
-## Sécurité
+### Vérifier les ports
+```bash
+sudo lsof -i :3001
+sudo lsof -i :80
+```
 
-⚠️ **Important** :
-- Ne commitez jamais vos certificats et clés privées
-- Le dossier `certs/` est exclu du contrôle de version
-- Utilisez des certificats avec des permissions restrictives
-- En production, utilisez un serveur HTTPS pour le proxy
+### Redémarrer tout
+```bash
+sudo systemctl restart mhcerts
+sudo systemctl restart nginx
+```
+
+## Accès
+- **Local** : http://localhost:8080
+- **Réseau** : http://192.168.1.105/
