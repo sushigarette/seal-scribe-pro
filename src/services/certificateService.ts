@@ -43,7 +43,7 @@ const getCertificateStatus = (notAfter: string): "valid" | "expiring" | "expired
   
   if (daysUntilExpiration < 0) {
     return "expired";
-  } else if (daysUntilExpiration <= 30) {
+  } else if (daysUntilExpiration <= 60) {
     return "expiring";
   } else {
     return "valid";

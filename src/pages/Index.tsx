@@ -4,7 +4,7 @@ import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
 import { useCertificateStats } from "@/hooks/useCertificates";
-import { Shield, Plus, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Shield, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -76,10 +76,6 @@ const Index = () => {
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Actualiser
-              </Button>
-              <Button className="bg-gradient-primary hover:opacity-90 shadow-card">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau certificat
               </Button>
             </div>
           </div>
