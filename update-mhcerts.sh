@@ -11,10 +11,24 @@ if ! git config --global --get safe.directory | grep -q "/home/mhcerts/mhcerts";
     git config --global --add safe.directory /home/mhcerts/mhcerts
 fi
 
-# Nettoyer le workspace
+# Sauvegarder les fichiers de données persistantes
+echo "💾 Sauvegarde des données persistantes..."
+if [ -f "treated-certificates.json" ]; then
+    cp treated-certificates.json /tmp/treated-certificates-backup.json
+    echo "✅ Fichier treated-certificates.json sauvegardé"
+fi
+
+# Nettoyer le workspace (sauf les fichiers de données)
 echo "🧹 Nettoyage du workspace..."
 git clean -fd
 git restore .
+
+# Restaurer les fichiers de données persistantes
+echo "🔄 Restauration des données persistantes..."
+if [ -f "/tmp/treated-certificates-backup.json" ]; then
+    mv /tmp/treated-certificates-backup.json treated-certificates.json
+    echo "✅ Fichier treated-certificates.json restauré"
+fi
 
 # Récupérer les dernières modifications
 echo "📥 Récupération des modifications..."

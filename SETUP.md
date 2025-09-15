@@ -144,6 +144,16 @@ sudo systemctl enable mhcerts
 sudo systemctl start mhcerts
 ```
 
+## Fichiers protégés
+
+### Données persistantes
+Le système protège automatiquement les fichiers de données importantes lors des mises à jour :
+
+- **`treated-certificates.json`** - Liste des certificats traités
+- **`certs/`** - Certificats client (déjà dans .gitignore)
+
+Ces fichiers sont sauvegardés et restaurés automatiquement par le script de mise à jour.
+
 ## Mise à jour du projet
 
 ### Création du script automatique

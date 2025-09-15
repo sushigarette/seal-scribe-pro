@@ -30,3 +30,6 @@ certs/
 *.pem
 *.p12
 *.pfx
+
+# Fichiers de données persistantes (ne pas supprimer lors des mises à jour)
+treated-certificates.json

@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CertificateListItem, Certificate } from "@/components/CertificateListItem";
 import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
 import { useCertificateStats } from "@/hooks/useCertificates";
-import { Shield, Loader2, AlertCircle, RefreshCw, Download } from "lucide-react";
+import { Shield, Loader2, AlertCircle, RefreshCw, Download, CheckCircle, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  markCertificateAsTreated, 
+  isCertificateTreated, 
+  filterOutTreatedCertificates,
+  getTreatedCertificates,
+  TreatedCertificate
+} from "@/services/treatedCertificatesService";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,9 +22,19 @@ const Index = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [treatedCertificates, setTreatedCertificates] = useState<TreatedCertificate[]>([]);
   const { toast } = useToast();
   
-  const { data: certificates = [], stats, isLoading, isError, error, refetch } = useCertificateStats();
+  const { data: allCertificates = [], stats, isLoading, isError, error, refetch } = useCertificateStats();
+  
+  // Filtrer les certificats pour exclure les traités
+  const certificates = filterOutTreatedCertificates(allCertificates);
+
+  // Charger les certificats traités au montage
+  useEffect(() => {
+    setTreatedCertificates(getTreatedCertificates());
+  }, []);
 
   const filteredCertificates = certificates.filter(cert => {
     const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,6 +79,26 @@ const Index = () => {
     const certificatesSection = document.querySelector('.space-y-3');
     if (certificatesSection) {
       certificatesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleMarkAsTreated = async (certificateId: string) => {
+    const certificate = allCertificates.find(c => c.id === certificateId);
+    if (certificate) {
+      try {
+        await markCertificateAsTreated(certificate);
+        setTreatedCertificates(getTreatedCertificates());
+        toast({
+          title: "Certificat marqué comme traité",
+          description: `Le certificat "${certificate.name}" a été marqué comme traité et retiré de la liste.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Erreur de synchronisation",
+          description: "Le certificat a été marqué localement mais n'a pas pu être synchronisé avec le serveur.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -242,37 +280,87 @@ const Index = () => {
 
         {/* Certificates List */}
         <div className="mt-8">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Chargement des certificats...</h3>
-              <p className="text-muted-foreground">
-                Récupération des données depuis le serveur.
-              </p>
-            </div>
-          ) : filteredCertificates.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Aucun certificat trouvé</h3>
-              <p className="text-muted-foreground">
-                {certificates.length === 0 
-                  ? "Aucun certificat disponible sur le serveur."
-                  : "Aucun certificat ne correspond à vos critères de recherche."
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredCertificates.map((certificate) => (
-                <CertificateListItem
-                  key={certificate.id}
-                  certificate={certificate}
-                  onDownload={handleDownload}
-                  onView={handleView}
-                />
-              ))}
-            </div>
-          )}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="pending" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                En attente ({filteredCertificates.length})
+              </TabsTrigger>
+              <TabsTrigger value="treated" className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Traités ({treatedCertificates.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pending" className="mt-6">
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">Chargement des certificats...</h3>
+                  <p className="text-muted-foreground">
+                    Récupération des données depuis le serveur.
+                  </p>
+                </div>
+              ) : filteredCertificates.length === 0 ? (
+                <div className="text-center py-12">
+                  <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">Aucun certificat trouvé</h3>
+                  <p className="text-muted-foreground">
+                    {certificates.length === 0 
+                      ? "Aucun certificat disponible sur le serveur."
+                      : "Aucun certificat ne correspond à vos critères de recherche."
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredCertificates.map((certificate) => (
+                    <CertificateListItem
+                      key={certificate.id}
+                      certificate={certificate}
+                      onDownload={handleDownload}
+                      onView={handleView}
+                      onMarkAsTreated={handleMarkAsTreated}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="treated" className="mt-6">
+              {treatedCertificates.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">Aucun certificat traité</h3>
+                  <p className="text-muted-foreground">
+                    Les certificats marqués comme traités apparaîtront ici.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {treatedCertificates.map((treatedCert) => {
+                    const certificate = allCertificates.find(c => c.id === treatedCert.id);
+                    if (!certificate) return null;
+                    
+                    return (
+                      <div key={treatedCert.id} className="opacity-75">
+                        <CertificateListItem
+                          certificate={certificate}
+                          onDownload={handleDownload}
+                          onView={handleView}
+                          isTreated={true}
+                        />
+                        <div className="ml-16 mt-2 text-sm text-muted-foreground">
+                          Traité le {new Date(treatedCert.treatedAt).toLocaleDateString('fr-FR')}
+                          {treatedCert.notes && ` - ${treatedCert.notes}`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Certificate Detail Modal */}

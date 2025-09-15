@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Calendar, Shield, Building2 } from "lucide-react";
+import { Download, Eye, Calendar, Shield, Building2, CheckCircle } from "lucide-react";
 
 export interface Certificate {
   id: string;
@@ -18,6 +18,8 @@ interface CertificateListItemProps {
   certificate: Certificate;
   onDownload: (id: string) => void;
   onView: (id: string) => void;
+  onMarkAsTreated?: (id: string) => void;
+  isTreated?: boolean;
 }
 
 const getStatusColor = (status: Certificate["status"]) => {
@@ -46,7 +48,7 @@ const getStatusText = (status: Certificate["status"]) => {
   }
 };
 
-export const CertificateListItem = ({ certificate, onDownload, onView }: CertificateListItemProps) => {
+export const CertificateListItem = ({ certificate, onDownload, onView, onMarkAsTreated, isTreated = false }: CertificateListItemProps) => {
   return (
     <div className="group flex items-center justify-between p-4 bg-card border rounded-lg hover:shadow-card transition-all duration-300 hover:border-primary/20">
       <div className="flex items-center gap-4 flex-1">
@@ -81,6 +83,17 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
       </div>
       
       <div className="flex gap-2 flex-shrink-0 ml-4">
+        {onMarkAsTreated && !isTreated && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onMarkAsTreated(certificate.id)}
+            className="group-hover:border-green-500/50 transition-colors text-green-600 hover:text-green-700"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Marquer traité
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"

@@ -97,6 +97,44 @@ app.get('/api/certificates', async (req, res) => {
   }
 });
 
+// Endpoint pour récupérer les certificats traités
+app.get('/api/treated-certificates', (req, res) => {
+  try {
+    const treatedCertsPath = path.join(__dirname, 'treated-certificates.json');
+    
+    if (fs.existsSync(treatedCertsPath)) {
+      const data = fs.readFileSync(treatedCertsPath, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération des certificats traités:', error.message);
+    res.status(500).json({ 
+      error: 'Erreur lors de la récupération des certificats traités',
+      details: error.message 
+    });
+  }
+});
+
+// Endpoint pour sauvegarder les certificats traités
+app.post('/api/treated-certificates', (req, res) => {
+  try {
+    const treatedCertsPath = path.join(__dirname, 'treated-certificates.json');
+    
+    fs.writeFileSync(treatedCertsPath, JSON.stringify(req.body, null, 2));
+    console.log('Certificats traités sauvegardés:', req.body.length, 'éléments');
+    
+    res.json({ success: true, count: req.body.length });
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde des certificats traités:', error.message);
+    res.status(500).json({ 
+      error: 'Erreur lors de la sauvegarde des certificats traités',
+      details: error.message 
+    });
+  }
+});
+
 // Route de santé
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
