@@ -3,26 +3,38 @@ import { Button } from "@/components/ui/button";
 import { Download, Eye, Calendar, Shield, Building2 } from "lucide-react";
 
 export interface Certificate {
-  id: string;
-  name: string;
+  id: number;
+  archive_name: string;
+  file_path: string;
+  subject_cn: string;
+  subject_dn: string;
   issuer: string;
-  expirationDate: string;
-  status: "valid" | "expiring" | "expired";
-  type: string;
-  fileSize: string;
+  issuer_dn: string;
+  not_before: string;
+  not_after: string;
+  days_to_expiry: number;
+  status: "valid" | "expiring_soon" | "expired";
+  fingerprint_sha256: string;
+  fingerprint_sha1: string;
+  algorithm: string;
+  key_length: number;
+  domains: string;
+  file_size: number;
+  last_modified: string;
+  is_valid: boolean;
 }
 
 interface CertificateListItemProps {
   certificate: Certificate;
-  onDownload: (id: string) => void;
-  onView: (id: string) => void;
+  onDownload: (archiveName: string) => void;
+  onView: (archiveName: string) => void;
 }
 
 const getStatusColor = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "bg-success text-success-foreground";
-    case "expiring":
+    case "expiring_soon":
       return "bg-warning text-warning-foreground";
     case "expired":
       return "bg-destructive text-destructive-foreground";
@@ -35,7 +47,7 @@ const getStatusText = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "Valide";
-    case "expiring":
+    case "expiring_soon":
       return "Expire bientôt";
     case "expired":
       return "Expiré";
@@ -55,7 +67,7 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-              {certificate.name}
+              {certificate.archive_name}
             </h3>
             <Badge className={getStatusColor(certificate.status)}>
               {getStatusText(certificate.status)}
@@ -69,10 +81,15 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              <span>Expire le {certificate.expirationDate}</span>
+              <span>Expire le {new Date(certificate.not_after).toLocaleDateString('fr-FR')}</span>
             </div>
-            <span>Type: {certificate.type}</span>
-            <span>Taille: {certificate.fileSize}</span>
+            <span>CN: {certificate.subject_cn}</span>
+            <span>Taille: {(certificate.file_size / 1024).toFixed(1)} KB</span>
+            {certificate.days_to_expiry > 0 && (
+              <span className="text-warning">
+                {certificate.days_to_expiry} jours restants
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -81,7 +98,7 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onView(certificate.id)}
+          onClick={() => onView(certificate.archive_name)}
           className="group-hover:border-primary/50 transition-colors"
         >
           <Eye className="h-4 w-4 mr-2" />
@@ -89,7 +106,7 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
         </Button>
         <Button
           size="sm"
-          onClick={() => onDownload(certificate.id)}
+          onClick={() => onDownload(certificate.archive_name)}
           className="bg-gradient-primary hover:opacity-90 transition-opacity"
         >
           <Download className="h-4 w-4 mr-2" />
