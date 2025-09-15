@@ -34,7 +34,7 @@ export const CertificateFilters = ({
       
       <div className="flex gap-3">
         <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
@@ -46,7 +46,7 @@ export const CertificateFilters = ({
         </Select>
         
         <Select value={typeFilter} onValueChange={onTypeFilterChange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>

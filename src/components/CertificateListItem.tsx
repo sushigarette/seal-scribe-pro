@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Calendar, Shield, Building2, CheckCircle } from "lucide-react";
+import { Download, Eye, Calendar, Shield, Building2, CheckCircle, RotateCcw } from "lucide-react";
 
 export interface Certificate {
   id: string;
@@ -19,6 +19,7 @@ interface CertificateListItemProps {
   onDownload: (id: string) => void;
   onView: (id: string) => void;
   onMarkAsTreated?: (id: string) => void;
+  onUnmarkAsTreated?: (id: string) => void;
   isTreated?: boolean;
 }
 
@@ -48,7 +49,7 @@ const getStatusText = (status: Certificate["status"]) => {
   }
 };
 
-export const CertificateListItem = ({ certificate, onDownload, onView, onMarkAsTreated, isTreated = false }: CertificateListItemProps) => {
+export const CertificateListItem = ({ certificate, onDownload, onView, onMarkAsTreated, onUnmarkAsTreated, isTreated = false }: CertificateListItemProps) => {
   return (
     <div className="group flex items-center justify-between p-4 bg-card border rounded-lg hover:shadow-card transition-all duration-300 hover:border-primary/20">
       <div className="flex items-center gap-4 flex-1">
@@ -83,7 +84,7 @@ export const CertificateListItem = ({ certificate, onDownload, onView, onMarkAsT
       </div>
       
       <div className="flex gap-2 flex-shrink-0 ml-4">
-        {onMarkAsTreated && !isTreated && (
+        {onMarkAsTreated && !isTreated && (certificate.status === "expiring" || certificate.status === "expired") && (
           <Button
             variant="outline"
             size="sm"
@@ -92,6 +93,17 @@ export const CertificateListItem = ({ certificate, onDownload, onView, onMarkAsT
           >
             <CheckCircle className="h-4 w-4 mr-2" />
             Marquer traité
+          </Button>
+        )}
+        {onUnmarkAsTreated && isTreated && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onUnmarkAsTreated(certificate.id)}
+            className="group-hover:border-orange-500/50 transition-colors text-orange-600 hover:text-orange-700"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Remettre en attente
           </Button>
         )}
         <Button

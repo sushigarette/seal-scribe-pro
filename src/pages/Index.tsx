@@ -1,18 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CertificateListItem, Certificate } from "@/components/CertificateListItem";
 import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
 import { useCertificateStats } from "@/hooks/useCertificates";
-import { Shield, Loader2, AlertCircle, RefreshCw, Download, CheckCircle, List } from "lucide-react";
+import { Shield, Loader2, AlertCircle, RefreshCw, Download, CheckCircle, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Pagination } from "@/components/Pagination";
 import { 
   markCertificateAsTreated, 
+  unmarkCertificateAsTreated,
   isCertificateTreated, 
   filterOutTreatedCertificates,
   getTreatedCertificates,
+  syncTreatedCertificatesWithAPI,
   TreatedCertificate
 } from "@/services/treatedCertificatesService";
 
@@ -24,6 +27,13 @@ const Index = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
   const [treatedCertificates, setTreatedCertificates] = useState<TreatedCertificate[]>([]);
+  
+  // États de pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPageTreated, setCurrentPageTreated] = useState(1);
+  const [itemsPerPageTreated, setItemsPerPageTreated] = useState(10);
+  
   const { toast } = useToast();
   
   const { data: allCertificates = [], stats, isLoading, isError, error, refetch } = useCertificateStats();
@@ -36,15 +46,35 @@ const Index = () => {
     setTreatedCertificates(getTreatedCertificates());
   }, []);
 
-  const filteredCertificates = certificates.filter(cert => {
-    const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || cert.status === statusFilter;
-    const matchesType = typeFilter === "all" || cert.type.toLowerCase().includes(typeFilter.toLowerCase());
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  const filteredCertificates = useMemo(() => {
+    return certificates.filter(cert => {
+      const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           cert.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || cert.status === statusFilter;
+      const matchesType = typeFilter === "all" || cert.type.toLowerCase().includes(typeFilter.toLowerCase());
+      
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [certificates, searchTerm, statusFilter, typeFilter]);
+
+  // Pagination pour les certificats en attente
+  const paginatedCertificates = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredCertificates.slice(startIndex, endIndex);
+  }, [filteredCertificates, currentPage, itemsPerPage]);
+
+  // Pagination pour les certificats traités
+  const paginatedTreatedCertificates = useMemo(() => {
+    const startIndex = (currentPageTreated - 1) * itemsPerPageTreated;
+    const endIndex = startIndex + itemsPerPageTreated;
+    return treatedCertificates.slice(startIndex, endIndex);
+  }, [treatedCertificates, currentPageTreated, itemsPerPageTreated]);
+
+  // Calcul du nombre total de pages
+  const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
+  const totalPagesTreated = Math.ceil(treatedCertificates.length / itemsPerPageTreated);
 
   const handleDownload = (id: string) => {
     const cert = certificates.find(c => c.id === id);
@@ -75,11 +105,34 @@ const Index = () => {
       setTypeFilter(filterValue);
     }
     
+    // Réinitialiser la pagination lors du filtrage
+    setCurrentPage(1);
+    
     // Scroll vers la liste des certificats
     const certificatesSection = document.querySelector('.space-y-3');
     if (certificatesSection) {
       certificatesSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  // Fonctions de pagination pour les certificats en attente
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  // Fonctions de pagination pour les certificats traités
+  const handlePageChangeTreated = (page: number) => {
+    setCurrentPageTreated(page);
+  };
+
+  const handleItemsPerPageChangeTreated = (value: string) => {
+    setItemsPerPageTreated(Number(value));
+    setCurrentPageTreated(1);
   };
 
   const handleMarkAsTreated = async (certificateId: string) => {
@@ -96,6 +149,37 @@ const Index = () => {
         toast({
           title: "Erreur de synchronisation",
           description: "Le certificat a été marqué localement mais n'a pas pu être synchronisé avec le serveur.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleUnmarkAsTreated = async (certificateId: string) => {
+    const certificate = allCertificates.find(c => c.id === certificateId);
+    if (certificate) {
+      try {
+        // Confirmation avant dé-marquage
+        if (window.confirm(`Êtes-vous sûr de vouloir remettre le certificat "${certificate.name}" en attente ?`)) {
+          unmarkCertificateAsTreated(certificateId);
+          setTreatedCertificates(getTreatedCertificates());
+          
+          // Synchroniser avec l'API
+          try {
+            await syncTreatedCertificatesWithAPI();
+          } catch (error) {
+            console.error('Erreur lors de la synchronisation:', error);
+          }
+          
+          toast({
+            title: "Certificat remis en attente",
+            description: `Le certificat "${certificate.name}" a été remis en attente et réapparaît dans la liste.`,
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de remettre le certificat en attente.",
           variant: "destructive",
         });
       }
@@ -313,17 +397,29 @@ const Index = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredCertificates.map((certificate) => (
-                    <CertificateListItem
-                      key={certificate.id}
-                      certificate={certificate}
-                      onDownload={handleDownload}
-                      onView={handleView}
-                      onMarkAsTreated={handleMarkAsTreated}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-3">
+                    {paginatedCertificates.map((certificate) => (
+                      <CertificateListItem
+                        key={certificate.id}
+                        certificate={certificate}
+                        onDownload={handleDownload}
+                        onView={handleView}
+                        onMarkAsTreated={handleMarkAsTreated}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination pour les certificats en attente */}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={filteredCertificates.length}
+                    onPageChange={handlePageChange}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                  />
+                </>
               )}
             </TabsContent>
 
@@ -337,27 +433,40 @@ const Index = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {treatedCertificates.map((treatedCert) => {
-                    const certificate = allCertificates.find(c => c.id === treatedCert.id);
-                    if (!certificate) return null;
-                    
-                    return (
-                      <div key={treatedCert.id} className="opacity-75">
-                        <CertificateListItem
-                          certificate={certificate}
-                          onDownload={handleDownload}
-                          onView={handleView}
-                          isTreated={true}
-                        />
-                        <div className="ml-16 mt-2 text-sm text-muted-foreground">
-                          Traité le {new Date(treatedCert.treatedAt).toLocaleDateString('fr-FR')}
-                          {treatedCert.notes && ` - ${treatedCert.notes}`}
+                <>
+                  <div className="space-y-3">
+                    {paginatedTreatedCertificates.map((treatedCert) => {
+                      const certificate = allCertificates.find(c => c.id === treatedCert.id);
+                      if (!certificate) return null;
+                      
+                      return (
+                        <div key={treatedCert.id} className="opacity-75">
+                          <CertificateListItem
+                            certificate={certificate}
+                            onDownload={handleDownload}
+                            onView={handleView}
+                            onUnmarkAsTreated={handleUnmarkAsTreated}
+                            isTreated={true}
+                          />
+                          <div className="ml-16 mt-2 text-sm text-muted-foreground">
+                            Traité le {new Date(treatedCert.treatedAt).toLocaleDateString('fr-FR')}
+                            {treatedCert.notes && ` - ${treatedCert.notes}`}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Pagination pour les certificats traités */}
+                  <Pagination
+                    currentPage={currentPageTreated}
+                    totalPages={totalPagesTreated}
+                    itemsPerPage={itemsPerPageTreated}
+                    totalItems={treatedCertificates.length}
+                    onPageChange={handlePageChangeTreated}
+                    onItemsPerPageChange={handleItemsPerPageChangeTreated}
+                  />
+                </>
               )}
             </TabsContent>
           </Tabs>
