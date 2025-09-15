@@ -20,7 +20,8 @@ fi
 
 # Nettoyer le workspace (sauf les fichiers de données)
 echo "🧹 Nettoyage du workspace..."
-git clean -fd
+# Ne pas utiliser git clean -fd car cela supprime les nouveaux fichiers
+# Utiliser git restore pour remettre les fichiers modifiés
 git restore .
 
 # Restaurer les fichiers de données persistantes
