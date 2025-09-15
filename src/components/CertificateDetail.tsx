@@ -8,14 +8,14 @@ interface CertificateDetailProps {
   certificate: Certificate | null;
   isOpen: boolean;
   onClose: () => void;
-  onDownload: (archiveName: string) => void;
+  onDownload: (id: string) => void;
 }
 
 const getStatusColor = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "bg-success text-success-foreground";
-    case "expiring_soon":
+    case "expiring":
       return "bg-warning text-warning-foreground";
     case "expired":
       return "bg-destructive text-destructive-foreground";
@@ -28,7 +28,7 @@ const getStatusText = (status: Certificate["status"]) => {
   switch (status) {
     case "valid":
       return "Valide";
-    case "expiring_soon":
+    case "expiring":
       return "Expire bientôt";
     case "expired":
       return "Expiré";
@@ -40,17 +40,17 @@ const getStatusText = (status: Certificate["status"]) => {
 export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: CertificateDetailProps) => {
   if (!certificate) return null;
 
-  // Utiliser les données réelles du certificat
+  // Mock detailed data - in real app, this would come from API
   const detailData = {
-    serialNumber: certificate.fingerprint_sha1 || "N/A",
-    algorithm: certificate.algorithm || "N/A",
-    keyLength: certificate.key_length ? `${certificate.key_length} bits` : "N/A",
-    fingerprint: certificate.fingerprint_sha256 || "N/A",
-    subject: certificate.subject_dn || certificate.subject_cn || "N/A",
-    issueDate: new Date(certificate.not_before).toLocaleDateString('fr-FR'),
-    validFrom: new Date(certificate.not_before).toLocaleDateString('fr-FR'),
-    validTo: new Date(certificate.not_after).toLocaleDateString('fr-FR'),
-    domains: certificate.domains ? JSON.parse(certificate.domains) : [],
+    serialNumber: "3A:4B:5C:6D:7E:8F:9A:0B:1C:2D",
+    algorithm: "SHA256 avec RSA",
+    keyLength: "2048 bits",
+    fingerprint: "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90",
+    subject: "CN=exemple.com, O=Mon Entreprise, C=FR",
+    issueDate: "15/01/2024",
+    validFrom: "15/01/2024",
+    validTo: certificate.expirationDate,
+    domains: ["exemple.com", "www.exemple.com", "api.exemple.com"],
   };
 
   return (
@@ -62,7 +62,7 @@ export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: 
               <div className="p-2 rounded-lg bg-primary/10">
                 <Shield className="h-5 w-5 text-primary" />
               </div>
-              {certificate.archive_name}
+              {certificate.name}
             </DialogTitle>
             <Badge className={getStatusColor(certificate.status)}>
               {getStatusText(certificate.status)}
@@ -83,20 +83,16 @@ export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: 
                 <p className="text-sm">{certificate.issuer}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-muted-foreground">CN (Common Name)</span>
-                <p className="text-sm">{certificate.subject_cn}</p>
+                <span className="text-sm font-medium text-muted-foreground">Type</span>
+                <p className="text-sm">{certificate.type}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-muted-foreground">Empreinte SHA-1</span>
+                <span className="text-sm font-medium text-muted-foreground">Numéro de série</span>
                 <p className="text-sm font-mono">{detailData.serialNumber}</p>
               </div>
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Taille du fichier</span>
-                <p className="text-sm">{(certificate.file_size / 1024).toFixed(1)} KB</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-muted-foreground">Jours restants</span>
-                <p className="text-sm">{certificate.days_to_expiry} jours</p>
+                <p className="text-sm">{certificate.fileSize}</p>
               </div>
             </div>
           </div>
@@ -135,7 +131,7 @@ export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: 
                 <p className="text-sm">{detailData.keyLength}</p>
               </div>
               <div className="col-span-2">
-                <span className="text-sm font-medium text-muted-foreground">Empreinte SHA-256</span>
+                <span className="text-sm font-medium text-muted-foreground">Empreinte SHA-1</span>
                 <p className="text-sm font-mono break-all">{detailData.fingerprint}</p>
               </div>
             </div>
@@ -170,11 +166,11 @@ export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button 
-              onClick={() => onDownload(certificate.archive_name)}
+              onClick={() => onDownload(certificate.id)}
               className="flex-1 bg-gradient-primary hover:opacity-90"
             >
               <Download className="h-4 w-4 mr-2" />
-              Télécharger l'archive
+              Télécharger le certificat
             </Button>
             <Button variant="outline" onClick={onClose} className="flex-1">
               Fermer
