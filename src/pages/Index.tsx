@@ -4,7 +4,7 @@ import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
 import { useCertificateStats } from "@/hooks/useCertificates";
-import { Shield, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Shield, Loader2, AlertCircle, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -64,6 +64,75 @@ const Index = () => {
     }
   };
 
+  const exportToCSV = () => {
+    if (filteredCertificates.length === 0) {
+      toast({
+        title: "Aucune donnée à exporter",
+        description: "Aucun certificat ne correspond aux filtres sélectionnés.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Créer les en-têtes CSV
+    const headers = [
+      "Nom",
+      "Émetteur", 
+      "Date d'expiration",
+      "Statut",
+      "Type",
+      "Numéro de série",
+      "Nom distingué"
+    ];
+
+    // Créer les données CSV
+    const csvData = filteredCertificates.map(cert => [
+      cert.name,
+      cert.issuer,
+      cert.expirationDate,
+      cert.status,
+      cert.type,
+      cert.serialNumber,
+      cert.distinguishedName
+    ]);
+
+    // Convertir en CSV
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.map(field => `"${field}"`).join(","))
+    ].join("\n");
+
+    // Créer et télécharger le fichier
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    // Nom du fichier basé sur les filtres
+    let filename = "certificats";
+    if (statusFilter !== "all") {
+      filename += `_${statusFilter}`;
+    }
+    if (typeFilter !== "all") {
+      filename += `_${typeFilter}`;
+    }
+    if (searchTerm) {
+      filename += `_recherche_${searchTerm}`;
+    }
+    filename += `_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export CSV réussi",
+      description: `${filteredCertificates.length} certificat(s) exporté(s) dans ${filename}`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -79,6 +148,15 @@ const Index = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={exportToCSV}
+                disabled={isLoading || filteredCertificates.length === 0}
+                className="shadow-card"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exporter CSV
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={handleRefresh}
