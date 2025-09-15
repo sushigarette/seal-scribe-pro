@@ -50,6 +50,20 @@ const Index = () => {
     });
   };
 
+  const handleStatClick = (filterType: string, filterValue: string) => {
+    if (filterType === "status") {
+      setStatusFilter(filterValue);
+    } else if (filterType === "type") {
+      setTypeFilter(filterValue);
+    }
+    
+    // Scroll vers la liste des certificats
+    const certificatesSection = document.querySelector('.space-y-3');
+    if (certificatesSection) {
+      certificatesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -79,25 +93,37 @@ const Index = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 bg-card rounded-lg border shadow-subtle">
+            <div 
+              className="p-4 bg-card rounded-lg border shadow-subtle cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleStatClick("status", "all")}
+            >
               <div className="text-2xl font-bold text-foreground">
                 {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.total}
               </div>
               <div className="text-sm text-muted-foreground">Total</div>
             </div>
-            <div className="p-4 bg-card rounded-lg border shadow-subtle">
+            <div 
+              className="p-4 bg-card rounded-lg border shadow-subtle cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleStatClick("status", "valid")}
+            >
               <div className="text-2xl font-bold text-success">
                 {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.valid}
               </div>
               <div className="text-sm text-muted-foreground">Valides</div>
             </div>
-            <div className="p-4 bg-card rounded-lg border shadow-subtle">
+            <div 
+              className="p-4 bg-card rounded-lg border shadow-subtle cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleStatClick("status", "expiring")}
+            >
               <div className="text-2xl font-bold text-warning">
                 {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.expiring}
               </div>
               <div className="text-sm text-muted-foreground">Expirent bientôt</div>
             </div>
-            <div className="p-4 bg-card rounded-lg border shadow-subtle">
+            <div 
+              className="p-4 bg-card rounded-lg border shadow-subtle cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleStatClick("status", "expired")}
+            >
               <div className="text-2xl font-bold text-destructive">
                 {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.expired}
               </div>
