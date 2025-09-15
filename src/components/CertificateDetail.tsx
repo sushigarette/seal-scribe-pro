@@ -40,17 +40,17 @@ const getStatusText = (status: Certificate["status"]) => {
 export const CertificateDetail = ({ certificate, isOpen, onClose, onDownload }: CertificateDetailProps) => {
   if (!certificate) return null;
 
-  // Mock detailed data - in real app, this would come from API
+  // Utiliser les vraies données du certificat
   const detailData = {
-    serialNumber: "3A:4B:5C:6D:7E:8F:9A:0B:1C:2D",
-    algorithm: "SHA256 avec RSA",
-    keyLength: "2048 bits",
-    fingerprint: "A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90",
-    subject: "CN=exemple.com, O=Mon Entreprise, C=FR",
-    issueDate: "15/01/2024",
-    validFrom: "15/01/2024",
+    serialNumber: certificate.serialNumber,
+    algorithm: "SHA256 avec RSA", // À récupérer depuis l'API si disponible
+    keyLength: "2048 bits", // À récupérer depuis l'API si disponible
+    fingerprint: "N/A", // À récupérer depuis l'API si disponible
+    subject: certificate.distinguishedName,
+    issueDate: "N/A", // À récupérer depuis l'API si disponible
+    validFrom: "N/A", // À récupérer depuis l'API si disponible
     validTo: certificate.expirationDate,
-    domains: ["exemple.com", "www.exemple.com", "api.exemple.com"],
+    domains: [certificate.name], // Simplifié pour l'instant
   };
 
   return (

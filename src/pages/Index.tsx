@@ -3,66 +3,10 @@ import { CertificateListItem, Certificate } from "@/components/CertificateListIt
 import { CertificateFilters } from "@/components/CertificateFilters";
 import { CertificateDetail } from "@/components/CertificateDetail";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus } from "lucide-react";
+import { useCertificateStats } from "@/hooks/useCertificates";
+import { Shield, Plus, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Mock data - in real app, this would come from API
-const mockCertificates: Certificate[] = [
-  {
-    id: "1",
-    name: "Certificat SSL exemple.com",
-    issuer: "Let's Encrypt",
-    expirationDate: "15/03/2025",
-    status: "valid",
-    type: "SSL/TLS",
-    fileSize: "2.1 KB"
-  },
-  {
-    id: "2", 
-    name: "Certificat Code Signing",
-    issuer: "DigiCert",
-    expirationDate: "28/02/2025",
-    status: "expiring",
-    type: "Code Signing",
-    fileSize: "4.8 KB"
-  },
-  {
-    id: "3",
-    name: "Certificat Email Sécurisé",
-    issuer: "Comodo",
-    expirationDate: "10/01/2025",
-    status: "expired",
-    type: "Email",
-    fileSize: "1.9 KB"
-  },
-  {
-    id: "4",
-    name: "Certificat Client VPN",
-    issuer: "GlobalSign",
-    expirationDate: "20/06/2025",
-    status: "valid",
-    type: "Client",
-    fileSize: "3.2 KB"
-  },
-  {
-    id: "5",
-    name: "Certificat Wildcard *.monsite.fr",
-    issuer: "Sectigo",
-    expirationDate: "05/04/2025",
-    status: "valid",
-    type: "SSL/TLS",
-    fileSize: "2.7 KB"
-  },
-  {
-    id: "6",
-    name: "Certificat API Interne",
-    issuer: "Autorité Interne",
-    expirationDate: "12/02/2025",
-    status: "expiring",
-    type: "SSL/TLS",
-    fileSize: "1.8 KB"
-  }
-];
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,10 +15,13 @@ const Index = () => {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { toast } = useToast();
+  
+  const { data: certificates = [], stats, isLoading, isError, error, refetch } = useCertificateStats();
 
-  const filteredCertificates = mockCertificates.filter(cert => {
+  const filteredCertificates = certificates.filter(cert => {
     const matchesSearch = cert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.issuer.toLowerCase().includes(searchTerm.toLowerCase());
+                         cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         cert.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || cert.status === statusFilter;
     const matchesType = typeFilter === "all" || cert.type.toLowerCase().includes(typeFilter.toLowerCase());
     
@@ -82,7 +29,7 @@ const Index = () => {
   });
 
   const handleDownload = (id: string) => {
-    const cert = mockCertificates.find(c => c.id === id);
+    const cert = certificates.find(c => c.id === id);
     toast({
       title: "Téléchargement initié",
       description: `Le certificat "${cert?.name}" est en cours de téléchargement.`,
@@ -90,21 +37,18 @@ const Index = () => {
   };
 
   const handleView = (id: string) => {
-    const cert = mockCertificates.find(c => c.id === id);
+    const cert = certificates.find(c => c.id === id);
     setSelectedCertificate(cert || null);
     setIsDetailOpen(true);
   };
 
-  const getStatusCounts = () => {
-    return {
-      total: mockCertificates.length,
-      valid: mockCertificates.filter(c => c.status === "valid").length,
-      expiring: mockCertificates.filter(c => c.status === "expiring").length,
-      expired: mockCertificates.filter(c => c.status === "expired").length,
-    };
+  const handleRefresh = () => {
+    refetch();
+    toast({
+      title: "Actualisation",
+      description: "Les certificats sont en cours de mise à jour...",
+    });
   };
-
-  const statusCounts = getStatusCounts();
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -123,28 +67,47 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button className="bg-gradient-primary hover:opacity-90 shadow-card">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau certificat
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="shadow-card"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Actualiser
+              </Button>
+              <Button className="bg-gradient-primary hover:opacity-90 shadow-card">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau certificat
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="p-4 bg-card rounded-lg border shadow-subtle">
-              <div className="text-2xl font-bold text-foreground">{statusCounts.total}</div>
+              <div className="text-2xl font-bold text-foreground">
+                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.total}
+              </div>
               <div className="text-sm text-muted-foreground">Total</div>
             </div>
             <div className="p-4 bg-card rounded-lg border shadow-subtle">
-              <div className="text-2xl font-bold text-success">{statusCounts.valid}</div>
+              <div className="text-2xl font-bold text-success">
+                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.valid}
+              </div>
               <div className="text-sm text-muted-foreground">Valides</div>
             </div>
             <div className="p-4 bg-card rounded-lg border shadow-subtle">
-              <div className="text-2xl font-bold text-warning">{statusCounts.expiring}</div>
+              <div className="text-2xl font-bold text-warning">
+                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.expiring}
+              </div>
               <div className="text-sm text-muted-foreground">Expirent bientôt</div>
             </div>
             <div className="p-4 bg-card rounded-lg border shadow-subtle">
-              <div className="text-2xl font-bold text-destructive">{statusCounts.expired}</div>
+              <div className="text-2xl font-bold text-destructive">
+                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.expired}
+              </div>
               <div className="text-sm text-muted-foreground">Expirés</div>
             </div>
           </div>
@@ -160,14 +123,45 @@ const Index = () => {
           onTypeFilterChange={setTypeFilter}
         />
 
+        {/* Error State */}
+        {isError && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Erreur de chargement des certificats :</strong> {error?.message || 'Une erreur inattendue s\'est produite.'}
+              <br />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                className="mt-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Réessayer
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Certificates List */}
         <div className="mt-8">
-          {filteredCertificates.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Chargement des certificats...</h3>
+              <p className="text-muted-foreground">
+                Récupération des données depuis le serveur.
+              </p>
+            </div>
+          ) : filteredCertificates.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">Aucun certificat trouvé</h3>
               <p className="text-muted-foreground">
-                Aucun certificat ne correspond à vos critères de recherche.
+                {certificates.length === 0 
+                  ? "Aucun certificat disponible sur le serveur."
+                  : "Aucun certificat ne correspond à vos critères de recherche."
+                }
               </p>
             </div>
           ) : (

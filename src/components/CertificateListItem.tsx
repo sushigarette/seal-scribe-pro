@@ -10,6 +10,8 @@ export interface Certificate {
   status: "valid" | "expiring" | "expired";
   type: string;
   fileSize: string;
+  serialNumber: string;
+  distinguishedName: string;
 }
 
 interface CertificateListItemProps {
@@ -72,7 +74,8 @@ export const CertificateListItem = ({ certificate, onDownload, onView }: Certifi
               <span>Expire le {certificate.expirationDate}</span>
             </div>
             <span>Type: {certificate.type}</span>
-            <span>Taille: {certificate.fileSize}</span>
+            <span>S/N: {certificate.serialNumber}</span>
+            {certificate.fileSize !== 'N/A' && <span>Taille: {certificate.fileSize}</span>}
           </div>
         </div>
       </div>
