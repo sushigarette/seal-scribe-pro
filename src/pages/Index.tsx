@@ -78,10 +78,26 @@ const Index = () => {
 
   const handleDownload = (id: string) => {
     const cert = certificates.find(c => c.id === id);
-    toast({
-      title: "Téléchargement initié",
-      description: `Le certificat "${cert?.name}" est en cours de téléchargement.`,
-    });
+    if (cert) {
+      // Générer le nom du fichier à partir du nom du certificat
+      const fileName = cert.name
+        .toLowerCase()
+        .replace(/mhcomm/g, '') // Supprimer "mhcomm" du nom
+        .replace(/[^a-z0-9]/g, '_') // Remplacer les caractères spéciaux par des underscores
+        .replace(/_+/g, '_') // Remplacer les underscores multiples par un seul
+        .replace(/^_|_$/g, ''); // Supprimer les underscores en début et fin
+      
+      // Construire l'URL de téléchargement avec le préfixe certs_mg_app_
+      const downloadUrl = `https://office.mhcomm.fr/exchg/scratch/certs_mg_app_${fileName}.tar.gz`;
+      
+      // Ouvrir le lien de téléchargement dans un nouvel onglet
+      window.open(downloadUrl, '_blank');
+      
+      toast({
+        title: "Téléchargement initié",
+        description: `Le certificat "${cert.name}" est en cours de téléchargement.`,
+      });
+    }
   };
 
   const handleView = (id: string) => {

@@ -1,73 +1,90 @@
-# Welcome to your Lovable project
+# MHCerts - Gestionnaire de Certificats Numériques
 
-## Project info
+🛡️ **Application web moderne pour la gestion et la surveillance des certificats numériques**
 
-**URL**: https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41
+## 🎯 Aperçu
 
-## How can I edit this code?
+MHCerts est une solution complète développée avec React et TypeScript pour surveiller, organiser et gérer efficacement vos certificats SSL/TLS, de signature de code, et autres certificats numériques.
 
-There are several ways of editing your application.
+## ✨ Fonctionnalités principales
 
-**Use Lovable**
+- 🔍 **Surveillance en temps réel** des certificats via API sécurisée
+- 📊 **Tableau de bord intuitif** avec statistiques cliquables
+- 🏷️ **Classification automatique** par type (SSL/TLS, Code Signing, etc.)
+- 🔄 **Gestion des certificats traités** avec onglets séparés
+- 🔍 **Filtrage et recherche avancés** par nom, statut, type
+- 📄 **Pagination performante** pour de grandes listes
+- 📊 **Export CSV intelligent** des données filtrées
+- 🔧 **Vue détaillée** avec informations complètes
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41) and start prompting.
+## 🚀 Démarrage rapide
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prérequis
+- Node.js 18+
+- Certificats client (.crt et .key)
 
-**Use your preferred IDE**
+### Installation
+```bash
+# Cloner le projet
+git clone https://github.com/sushigarette/seal-scribe-pro.git
+cd seal-scribe-pro
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+# Installer les dépendances
+npm install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Placer les certificats client
+mkdir certs
+# Copier client.crt et client.key dans certs/
 
-Follow these steps:
+# Démarrer le serveur proxy
+npm run server:start
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Démarrer le frontend (nouveau terminal)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Accès
+- **Frontend** : http://localhost:8080
+- **API** : http://localhost:3001/api/certificates
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🏗️ Architecture
 
-**Use GitHub Codespaces**
+- **Frontend** : React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui
+- **Backend** : Node.js + Express (proxy sécurisé)
+- **Authentification** : Certificats client HTTPS
+- **Déploiement** : Nginx + Systemd (Raspberry Pi)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📚 Documentation
 
-## What technologies are used for this project?
+- **[PRESENTATION.md](./PRESENTATION.md)** - Présentation complète du projet
+- **[SETUP.md](./SETUP.md)** - Guide d'installation détaillé
+- **[CERTIFICATS_TRAITES.md](./CERTIFICATS_TRAITES.md)** - Système de gestion des certificats traités
+- **[PROTECTED_FILES.md](./PROTECTED_FILES.md)** - Gestion des fichiers persistants
 
-This project is built with:
+## 🔧 Scripts disponibles
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run dev              # Démarrage du frontend en développement
+npm run build            # Construction de production
+npm run server:start     # Démarrage du serveur proxy
+npm run server:dev       # Serveur proxy en mode développement
+npm run start:all        # Démarrage simultané frontend + backend
+```
 
-## How can I deploy this project?
+## 🛡️ Sécurité
 
-Simply open [Lovable](https://lovable.dev/projects/6c64286c-ccf2-46b5-b342-8da3694a3f41) and click on Share -> Publish.
+- Authentification par certificat client obligatoire
+- Communication HTTPS sécurisée
+- Validation des données côté client et serveur
+- Protection CORS configurée
 
-## Can I connect a custom domain to my Lovable project?
+## 📈 Avantages
 
-Yes, you can!
+- **Gain de temps** : Surveillance automatisée des certificats
+- **Réduction des risques** : Détection précoce des expirations
+- **Organisation claire** : Séparation des certificats traités/non traités
+- **Rapports détaillés** : Export CSV pour l'audit
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+**MHCerts** : La solution moderne pour la gestion de vos certificats numériques ! 🚀
